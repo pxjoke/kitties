@@ -98,42 +98,25 @@ const getStoreTxRequest = convertedTx => {
     }
 };
 
-const groupTxsByKitties = (kitties, tx) => {
-    if (!isKittyTx(tx)) {
-        return kitties;
-    }
-
-    const convertedTx = convertTx(tx);
-    const storeTxRequest = getStoreTxRequest(convertedTx);
-
-    storeTxRequest.forEach(request => {
-        const {kittyId, name, dataToStore} = request;
-        let kitty = kitties.find(k => k.kittyId === kittyId);
-        if (!kitty) {
-            kitty = {kittyId};
-            kitties.push(kitty);
-        }
-
-        kitty[name] = Array.isArray(kitty[name]) ? [...kitty[name], dataToStore] : [dataToStore];
-    });
-
-    return kitties;
-};
-
 const generateIndexesArray = (start, end) =>
     [...Array(end - start)].map((v, i) => i + start);
 
 const processBlock = (block, index, db, callback) => {
-    const txsByKitties = block.transactions.reduce(groupTxsByKitties, []);
+    const storeRequests = block.transactions
+        .filter(isKittyTx)
+        .map(getStoreTxRequest);
 
-    console.log(`Block #${index}`);
-    console.log(txsByKitties);
-    callback();
+    storeRequests.forEach(request => {
+        db
+            .collection("kitties")
+            .find({kittyId: request.kittyId})
+    });
+
     db
-      .collection("kitties")
-      .insertMany(txToStore)
-      .catch(err => console.log(err))
-      .then(callback);
+        .collection("kitties")
+        .insertMany(txToStore)
+        .catch(err => console.log(err))
+        .then(callback);
 };
 
 function storeKittyTxs(db, startBlockIdx, endBlockIdx, callback) {
