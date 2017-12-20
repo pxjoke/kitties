@@ -1,0 +1,18 @@
+bidOnSiringAuction
+    _sireId
+    _matronId
+createSiringAuction
+    _kittyId
+    _startingPrice
+    _endingPrice
+    _duration
+bid
+    _tokenId
+createSaleAuction
+    _kittyId
+    _startingPrice
+    _endingPrice
+    _duration
+breedWithAuto
+    _matronId
+    _sireId
