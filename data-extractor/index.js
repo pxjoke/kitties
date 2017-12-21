@@ -20,7 +20,6 @@ const generateEmptyKitty = () => ({
 });
 
 const upsertKitty = ({kittyId, method, dataToStore}) => {
-  console.log(kittyId);
   return elastic.update({
     index: 'kitties',
     type: 'kitty',
@@ -58,7 +57,7 @@ function storeTxs(startBlockIdx, endBlockIdx, callback) {
 
   async.eachLimit(
     blockIndexes,
-    20,
+    30,
     (index, callback) =>
       web3.eth
         .getBlock(index, true)
@@ -67,7 +66,7 @@ function storeTxs(startBlockIdx, endBlockIdx, callback) {
   );
 }
 
-storeTxs(4610019, 4611000);
+storeTxs(4640000, 4645000);
 // upsertKitty({
 //   kittyId: 12,
 //   method: 'bid',

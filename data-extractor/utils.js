@@ -19,6 +19,9 @@ const getParameterValue = (paramName, params) => {
 
 const getStoreTxRequest = (tx, web3) => {
   const convertedTx = convertTx(tx, web3);
+  if(!convertedTx) {
+    return [];
+  }
 
   const {method, methodParams} = convertedTx;
   switch (method) {
@@ -69,7 +72,9 @@ const getStoreTxRequest = (tx, web3) => {
 const convertTx = (tx, web3) => {
   const { blockHash, blockNumber, from, to, gas, gasPrice, hash, input, value} = tx;
   const decodedInput = decodeInput(input);
-
+  if (!decodedInput) {
+    return null;
+  }
   return {
     from, to, hash, blockHash, blockNumber, gas,
     gasPrice: web3.utils.fromWei(gasPrice),
