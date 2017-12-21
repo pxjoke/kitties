@@ -4,13 +4,13 @@ const auctionABI = require("../contracts-abi/auction");
 const coreABI = require("../contracts-abi/core");
 const siringABI = require("../contracts-abi/siring");
 
-const {auctionAddress, coreAddress, siringAddress, getContractName} = require( "../contracts/contracts-info");
+const {auctionAddress, coreAddress, siringAddress, getContractName} = require("../contracts/contracts-info");
 
 abiDecoder.addABI(auctionABI);
 abiDecoder.addABI(coreABI);
 abiDecoder.addABI(siringABI);
 
-const decodeInput = input => abiDecoder.decodeMethod(input);
+const decodeMethod = input => abiDecoder.decodeMethod(input);
 
 const getParameterValue = (paramName, params) => {
   const param = params.find(p => p.name === paramName);
@@ -69,19 +69,37 @@ const getStoreTxRequest = (tx, web3) => {
   }
 };
 
-const convertTx = (tx, web3) => {
-  const { blockHash, blockNumber, from, to, gas, gasPrice, hash, input, value} = tx;
-  const decodedInput = decodeInput(input);
+const convertInput = (input, web3) => {
+  const decodedInput = decodeMethod(input);
   if (!decodedInput) {
-    return null;
+    return {};
   }
+
+  const {name, params} = decodedInput;
+
+  return {
+    method: name,
+    ...params.reduce((acc, p) => {
+      let value = p.value;
+      if (p.name === '_startingPrice' || p.name === '_endingPrice') {
+        value = web3.utils.fromWei(p.value);
+      }
+      acc[p.name] = value;
+      return acc;
+    }, {})
+  }
+};
+
+const convertTx = (tx, web3) => {
+  const {blockHash, blockNumber, from, to, gas, gasPrice, hash, input, value} = tx;
+  const convertedInput = convertInput(input, web3);
+
   return {
     from, to, hash, blockHash, blockNumber, gas,
     gasPrice: web3.utils.fromWei(gasPrice),
     contract: getContractName(tx),
-    method: decodedInput.name,
-    methodParams: decodedInput.params,
-    value: web3.utils.fromWei(value)
+    value: web3.utils.fromWei(value),
+    ...convertedInput
   };
 };
 
@@ -99,4 +117,4 @@ const isKittyTx = ({to, from}) => {
 const generateIndexesArray = (start, end) =>
   [...Array(end - start)].map((v, i) => i + start);
 
-module.exports = {decodeInput, getStoreTxRequest, isKittyTx, generateIndexesArray};
+module.exports = {convertTx, isKittyTx, generateIndexesArray};
