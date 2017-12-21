@@ -4,11 +4,11 @@ const elasticsearch = require('elasticsearch');
 
 const {getStoreTxRequest, isKittyTx, generateIndexesArray} = require("./utils");
 
-// const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
 const elastic = new elasticsearch.Client({
   host: 'localhost:9200',
-  log: 'trace'
+  // log: 'trace'
 });
 
 const generateEmptyKitty = () => ({
@@ -20,10 +20,12 @@ const generateEmptyKitty = () => ({
 });
 
 const upsertKitty = ({kittyId, method, dataToStore}) => {
+  console.log(kittyId);
   return elastic.update({
     index: 'kitties',
     type: 'kitty',
     id: kittyId,
+    retryOnConflict: 10,
     body: {
       scripted_upsert: true,
       upsert: generateEmptyKitty(),
@@ -40,13 +42,15 @@ const upsertKitty = ({kittyId, method, dataToStore}) => {
 };
 
 const processBlock = (block, index, callback) => {
+  console.log(index);
   const storeRequests = block.transactions
     .filter(isKittyTx)
-    .map((tx) => getStoreTxRequest(tx, web3));
+    .map((tx) => getStoreTxRequest(tx, web3))
+    .reduce((acc, requests) => acc.concat(requests), []);
 
-  return Promise.all(storeRequests.map(request => upsertKitty(request)))
-    .then(callback)
-    .catch(err => console.log(err));
+  return Promise.all(storeRequests.map(upsertKitty))
+    .then(() => callback())
+    .catch(err => (console.log('ERROR', err), callback()));
 };
 
 function storeTxs(startBlockIdx, endBlockIdx, callback) {
@@ -63,9 +67,9 @@ function storeTxs(startBlockIdx, endBlockIdx, callback) {
   );
 }
 
-// storeTxs(4610019, 4610100);
-upsertKitty({
-  kittyId: 12,
-  method: 'bid',
-  dataToStore: 'Sored 1'
-});
+storeTxs(4610019, 4611000);
+// upsertKitty({
+//   kittyId: 12,
+//   method: 'bid',
+//   dataToStore: 'Sored 1'
+// });

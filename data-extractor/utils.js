@@ -21,9 +21,17 @@ const getStoreTxRequest = (tx, web3) => {
   const convertedTx = convertTx(tx, web3);
 
   const {method, methodParams} = convertedTx;
-
   switch (method) {
     case "bid":
+      return [
+        {
+          kittyId: getParameterValue("_tokenId", methodParams),
+          method,
+          dataToStore: {
+            tx: convertedTx
+          }
+        }
+      ];
     case "createSaleAuction":
     case "createSiringAuction":
       return [
