@@ -1,0 +1,72 @@
+PUT txs
+{
+  "mappings": {
+    "tx": {
+      "properties": {
+        "method": {
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}
+
+//Средняя цена продажи для кошки
+GET /txs/_search
+{
+  "size": 0,
+  "aggs": {
+    "kitties": {
+      "terms": {
+        "field": "_tokenId"
+      },
+      "aggs": {
+        "grade_avg" : {
+            "avg" : {
+                "field" : "value"
+            }
+        }
+      }
+    }
+  }
+}
+
+//Количесвто операций по методам
+GET txs/tx/_search
+{
+  "size": 0,
+    "aggs" : {
+        "methods" : {
+            "terms" : {
+              "field" : "method"
+            }
+        }
+    }
+}
+
+//Коичество продаж для кошки
+GET txs/tx/_search
+{
+  "size": 0,
+  "query": {
+    "term": {
+      "method": "bid"
+    }
+  },
+  "aggs": {
+    "kitties": {
+      "terms": {
+        "field": "_tokenId"
+      }
+    }
+  }
+}
+
+//Статы по эфирам
+GET /txs/_search
+{
+    "size": 0,
+    "aggs" : {
+        "grades_stats" : { "extended_stats" : { "field" : "value" } }
+    }
+}

@@ -82,7 +82,10 @@ const convertInput = (input, web3) => {
     ...params.reduce((acc, p) => {
       let value = p.value;
       if (p.name === '_startingPrice' || p.name === '_endingPrice') {
-        value = web3.utils.fromWei(p.value);
+        value = parseFloat(web3.utils.fromWei(p.value));
+      }
+      if (p.name === '_sireId' || p.name === '_matronId' || p.name === '_kittyId' || p.name === '_tokenId') {
+        value = parseInt(p.value);
       }
       acc[p.name] = value;
       return acc;
@@ -96,9 +99,9 @@ const convertTx = (tx, web3) => {
 
   return {
     from, to, hash, blockHash, blockNumber, gas,
-    gasPrice: web3.utils.fromWei(gasPrice),
+    gasPrice: parseFloat(web3.utils.fromWei(gasPrice)),
     contract: getContractName(tx),
-    value: web3.utils.fromWei(value),
+    value: parseFloat(web3.utils.fromWei(value)),
     ...convertedInput
   };
 };

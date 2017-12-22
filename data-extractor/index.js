@@ -8,7 +8,7 @@ const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
 const elastic = new elasticsearch.Client({
   host: 'localhost:9200',
-  log: 'trace'
+  // log: 'trace'
 });
 
 const generateEmptyKitty = () => ({
@@ -42,7 +42,7 @@ const upsertKitty = ({kittyId, method, dataToStore}) => {
 
 const insertTx = tx => {
   return elastic.index({
-    index: 'cryptokitties',
+    index: 'txs',
     type: 'tx',
     body: tx
   })
@@ -56,7 +56,7 @@ const insertTxs = txs => {
   const body = txs.reduce((acc, tx) => {
     return acc.concat({
       index: {
-        _index: 'cryptokitties',
+        _index: 'txs',
         _type: 'tx'
       }
     }, tx);
@@ -65,13 +65,30 @@ const insertTxs = txs => {
   return elastic.bulk({ body });
 };
 
+const insertBlockInfo = (block, kittyTxs) => {
+  const {number, hash, transactions, parentHash} = block;
+  return elastic.index({
+    index: 'blocks',
+    type: 'block',
+    id: number,
+    body: {
+      number,
+      hash,
+      parentHash,
+      totalTransactions: transactions.length,
+      kittyTransactions: kittyTxs.length,
+      kittiesPercent: (kittyTxs.length / transactions.length) * 100
+    }
+  })
+};
+
 const processBlock = (block, index, callback) => {
   console.log(index);
   const txs = block.transactions
     .filter(isKittyTx)
     .map((tx) => convertTx(tx, web3));
 
-  return insertTxs(txs)
+  return Promise.all([insertTxs(txs), insertBlockInfo(block, txs)])
     .then(() => callback())
     .catch(err => (console.log('ERROR', err), callback()));
 };
@@ -90,7 +107,7 @@ function storeTxs(startBlockIdx, endBlockIdx, callback) {
   );
 }
 
-storeTxs(4640000, 4640010);
+storeTxs(4684556, 4700000);
 // upsertKitty({
 //   kittyId: 12,
 //   method: 'bid',
